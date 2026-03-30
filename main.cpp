@@ -1,24 +1,32 @@
 #include <iostream>
-
+#include <fstream>
 using namespace std;
 
 int main(){
+    ifstream plik;
+    string f_name;
+    string alg_name;
+
     while(true){
         cout<<"Podaj nazwe lub sciezke do pliku: \n";
-
-        string f_name;
         cin>>f_name;
 
         cout<<"Podaj alogrytm kompresji: \n";
         cout<<"1. Huffman\n";
-        
-        string alg_name;
         cin>>alg_name;
+
         if(alg_name == "Huffman"){
-            //wywolaj algorytm
+            //check if file was correctly open
+            plik.open(f_name);
+            if(!plik.is_open()){
+                cout<<"Couldn't open a file!\n";
+                continue;
+            }
+
+            plik.close();
         }
         else{
-            cout<<"Bledna nazwa!";
+            cout<<"Wrong encoding!";
             continue;
         }
     }
