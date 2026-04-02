@@ -54,7 +54,6 @@ Concept:
 * `main.cpp` – program entry point, handles file input
 * `huffman.cpp / huffman.h` – Huffman algorithm implementation
 * `lz77.cpp / lz77.h` – LZ77 implementation
-* `priority_queue.cpp / .h` – custom min-heap structure
 
 ---
 
