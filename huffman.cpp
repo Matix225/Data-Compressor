@@ -1,88 +1,46 @@
 #include <iostream>
-#include <fstream>
+#include "huffman.h"
 #include <map>
 using namespace std;
 
-struct huff_node{
-    long long occurance;
-    char sign;
-    huff_node *l_child;
-    huff_node *r_child;
-};
-struct prior_q{
-    //priority queue stores huffman nodes in non_decreasing order.
-    //In each step we will take 2 smallest nodes(n1, n2) and create a new
-    //node with occurence = n1.oc + n2.oc and then ad him to queue
-
-    huff_node **tab;
-    int size;
-    int capacity;
-
-    prior_q(){
-        size = 0;
-        capacity = 1;
-        tab = (huff_node**)malloc((capacity + 1) * sizeof(huff_node*));
+void huffman(ifstream &file, string op){ //algorythm entry point
+    if(op == "Encode" || op == "encode")
+        encode(file);
+    else if(op == "Decode" || op == "decode"){
+        //decode();
     }
-    void expand(){
-        huff_node **new_tab = (huff_node**)malloc((2*capacity + 1) * sizeof(huff_node*));
-        for(int i = 1; i <= size; i++)
-            new_tab[i] = tab[i];
-        capacity *= 2;
-        
-        free(tab);
-        tab = new_tab;
-    }
-    void insert(huff_node *node){
-        if(size == capacity)
-            expand();
-        size++;
-        tab[size] = node;
-
-        shift_up();
+    else{
+        cout<<"Wrong operation. You can only encode or decode.\n";
         return;
     }
-    void shift_up(){ //build min heap
-        for(int i = size; i > 1;){
-            if(tab[i]->occurance < tab[i/2]->occurance){
-                swap(tab[i], tab[i/2]);
-                i = i / 2;
-            }
-            else    
-                break;
-        }
-    }
-    void shift_down(){
-        for(int i = 1; i <= size;){
-            int swap_ind = i;
-            if( (2*i <= size) && (tab[i] > tab[2*i]) )
-                swap_ind = 2*i;
-
-            if( (2*i + 1 <= size) && (tab[i] > tab[2*i+1]) )
-                swap_ind = 2*i + 1;
-
-            if(swap_ind == i)
-                return;
-            else{
-                swap(tab[i], tab[swap_ind]);
-                i = swap_ind;
-            }
-        }
-    }
-    huff_node* extract_min(){
-        huff_node *tmp;
-        swap(tab[1], tab[size]);
-        
-        tmp = tab[size];
-        size--;
-        shift_down();
-
-        return tmp;
-    }
-
-};
-void huffman(ifstream &file){
+}
+void encode(ifstream &file){
     map<char, int> tab; //stores sign and its number of occurance in file
     char sign;
     while(file.get(sign))
         tab[sign]++;
+
+
+    //create single nodes for every character in file
+    prior_q queue;
+    for(auto p: tab){
+        huff_node *node = (huff_node*)malloc(sizeof(huff_node));
+        node->sign = p.first;
+        node->occurance = p.second;
+        node->l_child = node->r_child = NULL;
+        queue.insert(node);
+    }
+
+    huff_node *a, *b, *tmp = NULL;
+    while(queue.size > 1){
+        a = queue.extract_min();
+        b = queue.extract_min();
+
+        tmp = (huff_node*)malloc(sizeof(huff_node));
+        tmp->occurance = a->occurance + b->occurance;
+        tmp->l_child = a;
+        tmp->r_child = b;
+        
+        queue.insert(tmp);
+    }
 }
