@@ -25,7 +25,7 @@ The program reads input data from a file, analyzes its structure, and applies a 
 
 ## Algorithms
 
-### Huffman Coding (version for ASCII)
+### Huffman Coding
 
 Huffman coding is a variable-length encoding algorithm that assigns shorter codes to more frequent symbols and longer codes to less frequent ones.
 
