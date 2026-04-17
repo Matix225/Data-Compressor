@@ -5,42 +5,8 @@ using namespace std;
 
 map<char, string> codes;
 
-void build_codes(huff_node *root, string code = ""){
-    if(root->l_child == NULL && root->r_child == NULL){
-        if(code == "") //file contains only 1 unique character
-            codes[root->sign] = "0";
-        else
-            codes[root->sign] = code;
-        
-        return;
-    }
-
-    build_codes(root->l_child, code + '0');
-    build_codes(root->r_child, code + '1');
-}
-void huffman(ifstream &file, string op){ //algorythm entry point
-    if(op == "Encode" || op == "encode")
-        encode(file);
-    else if(op == "Decode" || op == "decode"){
-        //decode();
-    }
-    else{
-        cout<<"Wrong operation. You can only encode or decode.\n";
-        return;
-    }
-}
-void encode(ifstream &file){
-    map<char, int> tab; //stores sign and its number of occurance in file
-    char sign;
-    while(file.get(sign))
-        tab[sign]++;
-
-    if(tab.empty()){//File was empty. There is nothing to compress.
-        cout<<"You can't compress empty file!\n";
-        return;
-    }
-
-    //create single nodes for every character in file
+huff_node* build_huff_tree(map<char, int> &tab){
+    //create nodes for every character in file
     prior_q queue;
     for(auto p: tab){
         huff_node *node = (huff_node*)malloc(sizeof(huff_node));
@@ -64,7 +30,44 @@ void encode(ifstream &file){
         queue.insert(tmp);
     }
 
-    huff_node *root = queue.tab[1];
+    return queue.tab[1];
+}
+void build_codes(huff_node *root, string code = ""){
+    if(root->l_child == NULL && root->r_child == NULL){
+        if(code == "") //file contains only 1 unique character
+            codes[root->sign] = "0";
+        else
+            codes[root->sign] = code;
+        
+        return;
+    }
+
+    build_codes(root->l_child, code + '0');
+    build_codes(root->r_child, code + '1');
+}
+void huffman(ifstream &file, string op, string fname){ //algorythm entry point
+    if(op == "Encode" || op == "encode")
+        encode(file, fname);
+    else if(op == "Decode" || op == "decode"){
+        decode(fname);
+    }
+    else{
+        cout<<"Wrong operation. You can only encode or decode.\n";
+        return;
+    }
+}
+void encode(ifstream &file, string fname){
+    map<char, int> tab; //stores sign and its number of occurance in file
+    char sign;
+    while(file.get(sign))
+        tab[sign]++;
+
+    if(tab.empty()){//File was empty. There is nothing to compress.
+        cout<<"You can't compress empty file!\n";
+        return;
+    }
+
+    huff_node *root = build_huff_tree(tab);
     codes.clear(); //clear code map after last encode
     build_codes(root);
 
@@ -74,10 +77,20 @@ void encode(ifstream &file){
     char s; 
     unsigned char buff = 0;
     int bit_count = 0;
-    ofstream compF("compressed.huff", ios::binary);
+    ofstream compF(fname + ".huff", ios::binary);
     if(!compF.good())
         return;
 
+    //we have to save codes as well for future decode
+    //we can save pair(sign, occurence) to quickly restore the huffman tree for decoding
+    int map_size = tab.size();
+    compF.write((char*)&map_size, sizeof(int));
+    for(auto p: tab){
+        compF.write(&p.first, 1); 
+        compF.write((char*)&p.second, sizeof(int));
+    }
+    
+    //saving signs using their codes
     while(file.get(s)){
         string code = codes[s];
         for(int i = 0; i < (int)code.size(); i++){
@@ -100,5 +113,50 @@ void encode(ifstream &file){
         buff <<= (8 - bit_count);
         compF.write((char*)&buff, 1);
     }
+
     compF.close();
+}
+void decode(string fName){
+    ifstream file(fName, ios::binary);
+    if(!file.good()){
+        cout<<"Couldn't open a file!\n";
+        return;
+    }
+    
+    //read code map size
+    int size;
+    file.read(reinterpret_cast<char*>(&size), sizeof(int));
+
+    map <char, int> tab;
+    for(int i = 0; i < size; i++){
+        char sign;
+        int occurance;
+
+        file.read(reinterpret_cast<char*>(&sign), sizeof(char));
+        file.read(reinterpret_cast<char*>(&occurance), sizeof(int));
+        tab[sign] = occurance;
+    }
+
+    //rebuilt huffman tree
+    huff_node *tree = build_huff_tree(tab);
+    
+    ofstream decFile(fName + ".decoded");
+    unsigned char buff;
+    huff_node *tmp = tree;
+    while(file.read(reinterpret_cast<char*>(&buff), 1)){
+        for(int i = 7; i >= 0; i--){
+            if((buff >> i) & 1)
+                tmp = tmp->r_child;
+            else
+                tmp = tmp->l_child;
+
+            if(tmp->l_child == NULL && tmp->r_child == NULL){
+                decFile << tmp->sign;
+                tmp = tree;
+            }
+        }
+    }
+
+    file.close();
+    decFile.close();
 }
