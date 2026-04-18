@@ -38,7 +38,7 @@ Steps:
 
 ---
 
-### LZ77
+### LZ77 (in progress)
 
 LZ77 compresses data by replacing repeated sequences with references to previous occurrences.
 
